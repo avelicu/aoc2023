@@ -1,9 +1,16 @@
-import kotlin.math.pow
+import kotlin.math.max
+import kotlin.math.min
 
 val chain = listOf("seed", "soil", "fertilizer", "water", "light", "temperature", "humidity", "location")
 
 data class Mapping(val interval: Interval, val to: Long)
-data class Interval(val from: Long, val len: Long)
+data class Interval(val from: Long, val len: Long) {
+  val to: Long get() = from + len - 1
+  override fun toString(): String = "[$from, $to]"
+}
+private fun forInterval(from: Long, to: Long): Interval =
+  Interval(from, to - from + 1)
+
 fun makemaps(input: List<String>): Map<Pair<String, String>, List<Mapping>> {
   var i = 0
   val maps = mutableMapOf<Pair<String, String>, MutableList<Mapping>>()
@@ -41,6 +48,57 @@ fun chainify(initial: Long, maps: Map<Pair<String, String>, List<Mapping>>): Lon
   return current
 }
 
+
+data class IntersectionResult(val intersection: Interval, val remainders: List<Interval>)
+fun intersect(a: Interval, b: Interval): IntersectionResult? {
+  val candidateStart = max(a.from, b.from)
+  val candidateEnd = min(a.to, b.to)
+  if (candidateStart > candidateEnd) return null
+
+  val intersection = forInterval(candidateStart, candidateEnd)
+  val before = if (candidateStart - 1 >= a.from) forInterval(a.from, candidateStart - 1) else null
+  val after = if (candidateEnd + 1 <= a.to) forInterval(candidateEnd + 1, a.to) else null
+  return IntersectionResult(intersection, listOfNotNull(before, after))
+}
+
+fun chainify2(initial: Interval, maps: Map<Pair<String, String>, List<Mapping>>): List<Interval> {
+  var currents = mutableListOf(initial)
+  for (pair in chain.zipWithNext()) {
+    println("> $currents ")
+    val spec = maps[pair]!!
+    val nextCurrents = mutableListOf<Interval>()
+
+    var i = 0
+    while (i < currents.size) {
+      val current = currents[i++]
+      var anyTransformed = false
+
+      for (subspec in spec) {
+        val intersectionResult = intersect(current, subspec.interval) ?: continue
+        val transformed =
+          Interval(
+            intersectionResult.intersection.from + (subspec.to - subspec.interval.from),
+            intersectionResult.intersection.len
+          )
+        println("$current ir $intersectionResult transformed to $transformed (remainders: ${intersectionResult.remainders}, spec: $subspec)")
+
+        nextCurrents.add(transformed)
+        currents.addAll(intersectionResult.remainders)
+        anyTransformed = true
+        break
+      }
+
+      if (!anyTransformed) {
+        println("$current unmatched, noop-transformed")
+        nextCurrents.add(current)
+      }
+    }
+    currents = nextCurrents
+  }
+  println("> $currents")
+  return currents
+}
+
 fun main() {
   fun part1(input: List<String>): Long {
     val seeds = input[0].substring("seeds: ".length).trim().split(" ").map { it.toLong() }
@@ -49,14 +107,23 @@ fun main() {
     return locations.min()
   }
 
-  fun part2(input: List<String>): Long = 0L
+  fun part2(input: List<String>): Long {
+    val intervals = input[0]
+      .substring("seeds: ".length).trim()
+      .split(" ")
+      .map { it.toLong() }
+      .chunked(2).map { li -> Interval(li[0], li[1]) }
+    val maps = makemaps(input.subList(2, input.lastIndex + 1))
+    val locations = intervals.map { chainify2(it, maps) }.flatten()
+    return locations.minOf { it.from }
+  }
 
   // test if implementation meets criteria from the description, like:
   val testInput = readInput("Day05_test")
-  check(part1(testInput) == 35L)
-  // check(part2(testInput) == 46L)
+  // check(part1(testInput) == 35L)
+  check(part2(testInput) == 46L)
 
   val input = readInput("Day05")
-  check(part1(input) == 910845529L)
-  // part2(input).println()
+  // check(part1(input) == 910845529L)
+  part2(input).println()
 }

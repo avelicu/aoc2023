@@ -103,8 +103,8 @@ fun main() {
   fun part1(input: List<String>): Long {
     val seeds = input[0].substring("seeds: ".length).trim().split(" ").map { it.toLong() }
     val maps = makemaps(input.subList(2, input.lastIndex + 1))
-    val locations = seeds.map { chainify(it, maps) }
-    return locations.min()
+    val locations = seeds.map { chainify2(Interval(it, 1), maps) }.flatten()
+    return locations.minOf { it.from }
   }
 
   fun part2(input: List<String>): Long {
@@ -120,10 +120,10 @@ fun main() {
 
   // test if implementation meets criteria from the description, like:
   val testInput = readInput("Day05_test")
-  // check(part1(testInput) == 35L)
+  check(part1(testInput) == 35L)
   check(part2(testInput) == 46L)
 
   val input = readInput("Day05")
-  // check(part1(input) == 910845529L)
-  part2(input).println()
+  check(part1(input) == 910845529L)
+  check(part2(input) == 77435348L)
 }

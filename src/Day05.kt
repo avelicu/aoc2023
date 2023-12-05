@@ -6,6 +6,7 @@ val chain = listOf("seed", "soil", "fertilizer", "water", "light", "temperature"
 data class Mapping(val interval: Interval, val to: Long)
 data class Interval(val from: Long, val len: Long) {
   val to: Long get() = from + len - 1
+  fun shiftBy(offset: Long) = Interval(from + offset, len)
   override fun toString(): String = "[$from, $to]"
 }
 private fun forInterval(from: Long, to: Long): Interval =
@@ -76,10 +77,7 @@ fun chainify2(initial: Interval, maps: Map<Pair<String, String>, List<Mapping>>)
       for (subspec in spec) {
         val intersectionResult = intersect(current, subspec.interval) ?: continue
         val transformed =
-          Interval(
-            intersectionResult.intersection.from + (subspec.to - subspec.interval.from),
-            intersectionResult.intersection.len
-          )
+          intersectionResult.intersection.shiftBy(subspec.to - subspec.interval.from)
         println("$current ir $intersectionResult transformed to $transformed (remainders: ${intersectionResult.remainders}, spec: $subspec)")
 
         nextCurrents.add(transformed)

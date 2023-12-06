@@ -31,11 +31,10 @@ private fun getWaysToBeat(race: Race): Int {
 }
 
 private fun getWaysToBeatWithMath(race: Race): Int {
-  val firstSolution = (race.time + sqrt((race.time*race.time - 4*race.distance).toDouble())) / 2
-  val secondSolution = (race.time - sqrt((race.time*race.time - 4*race.distance).toDouble())) / 2
-  val start = min(firstSolution, secondSolution)
-  val end = max(firstSolution, secondSolution)
-  return (ceil(end - 1) - floor(start + 1)).toInt() + 1
+  val firstSolution = (race.time - sqrt((race.time*race.time - 4*race.distance).toDouble())) / 2
+  val secondSolution = (race.time + sqrt((race.time*race.time - 4*race.distance).toDouble())) / 2
+  check(firstSolution < secondSolution)
+  return (ceil(secondSolution - 1) - floor(firstSolution + 1)).toInt() + 1
 }
 
 fun main() {
